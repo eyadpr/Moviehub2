@@ -10,7 +10,7 @@ import Search from "./Search/search";
 import Footer from "./Footer/footer";
 
 function App() {
-  const path = window.location.pathname;
+const path = window.location.pathname;
 
   if (path.startsWith("/movie/")) {
   const movieId = path.split("/")[2];
