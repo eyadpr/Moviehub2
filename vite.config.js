@@ -15,5 +15,5 @@ export default defineConfig({
       },
     },
   ],
-  base: "/project/",
+  base: "/<Moviehub2>/",
 });
