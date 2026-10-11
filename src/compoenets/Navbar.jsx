@@ -1,105 +1,101 @@
-import React from "react";
+import { NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  FaFilm,
-  FaHome,
-  FaHeart,
   FaBookmark,
+  FaFilm,
+  FaHeart,
+  FaHome,
   FaInfoCircle,
   FaSearch,
 } from "react-icons/fa";
 
 export default function Navbar() {
-  return (
-    <nav className="navbar navbar-expand-lg movie-navbar">
-      <div className="container">
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const currentQuery = searchParams.get("query") || "";
 
-        <a className="navbar-brand movie-logo" href="/">
+  return (
+    <nav className="navbar navbar-expand-lg navbar-dark movie-navbar sticky-top">
+      <div className="container">
+        <NavLink className="navbar-brand movie-logo" to="/">
           <span className="logo-icon">
             <FaFilm />
           </span>
-
           <span>
             Movie<span className="yellow">Hub</span>
           </span>
-        </a>
+        </NavLink>
 
         <button
           className="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarContent"
+          aria-controls="navbarContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
 
         <div className="collapse navbar-collapse" id="navbarContent">
-
           <ul className="navbar-nav mx-auto">
-
             <li className="nav-item">
-              <a className="nav-link" href="/">
+              <NavLink className="nav-link" to="/" end>
                 <FaHome />
                 Home
-              </a>
+              </NavLink>
             </li>
-
             <li className="nav-item">
-              <a className="nav-link" href="/#movies">
+              <NavLink className="nav-link" to="/#movies">
                 <FaFilm />
                 Movies
-              </a>
+              </NavLink>
             </li>
-
             <li className="nav-item">
-              <a className="nav-link" href="/favorites">
+              <NavLink className="nav-link" to="/favorites">
                 <FaHeart />
                 Favorites
-              </a>
+              </NavLink>
             </li>
-
             <li className="nav-item">
-              <a className="nav-link" href="/watchlist">
+              <NavLink className="nav-link" to="/watchlist">
                 <FaBookmark />
                 Watchlist
-              </a>
+              </NavLink>
             </li>
-
             <li className="nav-item">
-              <a className="nav-link" href="/about">
+              <NavLink className="nav-link" to="/about">
                 <FaInfoCircle />
                 About
-              </a>
+              </NavLink>
             </li>
-
           </ul>
 
           <form
-  className="search-form"
-  onSubmit={(e) => {
-    e.preventDefault();
-
-    const query = e.target.search.value.trim();
-
-    if (query) {
-      window.location.href = `/search?query=${encodeURIComponent(query)}`;
-    }
-  }}
->
+            className="search-form"
+            key={currentQuery}
+            onSubmit={(event) => {
+              event.preventDefault();
+              const query = event.target.search.value.trim();
+              if (query) {
+                navigate(`/search?query=${encodeURIComponent(query)}`);
+              }
+            }}
+          >
             <div className="search-input">
               <FaSearch />
-
               <input
-  type="text"
-  name="search"
-         placeholder="Search movies..."
-         />
-         </div>
-
+                type="search"
+                name="search"
+                defaultValue={currentQuery}
+                placeholder="Search movies..."
+                aria-label="Search movies"
+              />
+            </div>
             <button type="submit" className="search-btn">
               Search
             </button>
           </form>
-
         </div>
       </div>
     </nav>

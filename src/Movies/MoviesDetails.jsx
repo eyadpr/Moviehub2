@@ -1,21 +1,25 @@
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  FaStar,
+  FaBookmark,
   FaCalendar,
   FaClock,
   FaHeart,
-  FaBookmark,
+  FaStar,
 } from "react-icons/fa";
+import { backdropUrl, posterUrl, tmdbFetch } from "../lib/tmdb";
+import {
+  getFavorites,
+  getWatchlist,
+  toggleStoredMovie,
+} from "../lib/storage";
 
-const IMAGE_URL = "https://image.tmdb.org/t/p/w500";
-const BACKDROP_URL = "https://image.tmdb.org/t/p/original";
-
-export default function MovieDetails({ movieId }) {
+export default function MovieDetails() {
+  const { movieId } = useParams();
+  const navigate = useNavigate();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [isFavorite, setIsFavorite] = useState(false);
   const [isWatchlist, setIsWatchlist] = useState(false);
 
@@ -27,46 +31,14 @@ export default function MovieDetails({ movieId }) {
       setError("");
 
       try {
-        const token = import.meta.env.VITE_TMDB_TOKEN;
+        const data = await tmdbFetch(`/movie/${movieId}?language=en-US`);
+        if (cancelled) return;
 
-        if (!token) {
-          throw new Error("TMDB token is missing.");
-        }
-
-        const response = await fetch(
-          `https://api.themoviedb.org/3/movie/${movieId}?language=en-US`,
-          {
-            headers: {
-              accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to load movie: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        const favorites =
-          JSON.parse(localStorage.getItem("favorites") || "[]");
-
-        const watchlist =
-          JSON.parse(localStorage.getItem("watchlist") || "[]");
-
-        if (!cancelled) {
-          setMovie(data);
-          setIsFavorite(
-            favorites.some((item) => item.id === data.id)
-          );
-          setIsWatchlist(
-            watchlist.some((item) => item.id === data.id)
-          );
-        }
+        setMovie(data);
+        setIsFavorite(getFavorites().some((item) => item.id === data.id));
+        setIsWatchlist(getWatchlist().some((item) => item.id === data.id));
       } catch (err) {
         console.error("Movie details error:", err);
-
         if (!cancelled) {
           setError("Could not load movie details. Please try again.");
         }
@@ -89,31 +61,23 @@ export default function MovieDetails({ movieId }) {
     };
   }, [movieId]);
 
+  const goBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/#movies");
+    }
+  };
+
   const toggleFavorite = () => {
     if (!movie) return;
-
-    const favorites =
-      JSON.parse(localStorage.getItem("favorites") || "[]");
-
-    const updatedFavorites = isFavorite
-      ? favorites.filter((item) => item.id !== movie.id)
-      : [...favorites.filter((item) => item.id !== movie.id), movie];
-
-    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    toggleStoredMovie("favorites", movie, isFavorite);
     setIsFavorite(!isFavorite);
   };
 
   const toggleWatchlist = () => {
     if (!movie) return;
-
-    const watchlist =
-      JSON.parse(localStorage.getItem("watchlist") || "[]");
-
-    const updatedWatchlist = isWatchlist
-      ? watchlist.filter((item) => item.id !== movie.id)
-      : [...watchlist.filter((item) => item.id !== movie.id), movie];
-
-    localStorage.setItem("watchlist", JSON.stringify(updatedWatchlist));
+    toggleStoredMovie("watchlist", movie, isWatchlist);
     setIsWatchlist(!isWatchlist);
   };
 
@@ -125,17 +89,15 @@ export default function MovieDetails({ movieId }) {
     return (
       <div className="details-loading">
         {error || "Movie not found."}
-        <button
-          className="back-btn"
-          onClick={() => {
-            window.location.href = "/#movies";
-          }}
-        >
+        <button className="back-btn" type="button" onClick={goBack}>
           Back to Movies
         </button>
       </div>
     );
   }
+
+  const poster = posterUrl(movie.poster_path);
+  const backdrop = backdropUrl(movie.backdrop_path);
 
   return (
     <section
@@ -149,29 +111,19 @@ export default function MovieDetails({ movieId }) {
             rgba(5, 5, 5, 0.55) 70%,
             rgba(5, 5, 5, 0.9) 100%
           ),
-          ${movie.backdrop_path
-            ? `url("${BACKDROP_URL}${movie.backdrop_path}")`
-            : "none"}
+          ${backdrop ? `url("${backdrop}")` : "none"}
         `,
       }}
     >
       <div className="details-container">
-        <button
-          className="back-btn"
-          onClick={() => {
-            window.location.href = "/#movies";
-          }}
-        >
+        <button className="back-btn" type="button" onClick={goBack}>
           ← Back to Movies
         </button>
 
         <div className="details-content">
           <div className="details-poster">
-            {movie.poster_path ? (
-              <img
-                src={`${IMAGE_URL}${movie.poster_path}`}
-                alt={movie.title}
-              />
+            {poster ? (
+              <img src={poster} alt={movie.title} />
             ) : (
               <div className="no-image">No Image</div>
             )}
@@ -179,7 +131,6 @@ export default function MovieDetails({ movieId }) {
 
           <div className="details-info">
             <span className="details-label">MOVIE DETAILS</span>
-
             <h1>{movie.title}</h1>
 
             <div className="details-meta">
@@ -187,12 +138,10 @@ export default function MovieDetails({ movieId }) {
                 <FaStar />
                 {Number(movie.vote_average || 0).toFixed(1)}
               </span>
-
               <span>
                 <FaCalendar />
                 {movie.release_date || "N/A"}
               </span>
-
               <span>
                 <FaClock />
                 {movie.runtime ? `${movie.runtime} min` : "N/A"}
@@ -212,23 +161,21 @@ export default function MovieDetails({ movieId }) {
 
             <div className="details-buttons">
               <button
+                type="button"
                 className={`details-btn ${isFavorite ? "active-btn" : ""}`}
                 onClick={toggleFavorite}
               >
                 <FaHeart />
-                {isFavorite
-                  ? "Remove from Favorites"
-                  : "Add to Favorites"}
+                {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
               </button>
 
               <button
+                type="button"
                 className={`details-btn ${isWatchlist ? "active-btn" : ""}`}
                 onClick={toggleWatchlist}
               >
                 <FaBookmark />
-                {isWatchlist
-                  ? "Remove from Watchlist"
-                  : "Add to Watchlist"}
+                {isWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
               </button>
             </div>
           </div>

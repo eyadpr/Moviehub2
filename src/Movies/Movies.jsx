@@ -1,50 +1,67 @@
-
-import React, { useEffect, useState } from "react";
-import { FaStar, FaArrowRight, FaPlay } from "react-icons/fa";
-
-const API_URL =
-  "https://api.themoviedb.org/3/movie/popular?language=en-US&page=1";
-
-const IMAGE_URL = "https://image.tmdb.org/t/p/w500";
+import { useEffect, useState } from "react";
+import { FaArrowRight } from "react-icons/fa";
+import MovieCard from "../compoenets/MovieCard";
+import { tmdbFetch } from "../lib/tmdb";
 
 export default function Movies() {
   const [movies, setMovies] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     async function getMovies() {
       try {
-        const token = import.meta.env.VITE_TMDB_TOKEN;
-
-        if (!token) {
-          throw new Error("TMDB token is missing from the .env file.");
-        }
-
-        const response = await fetch(API_URL, {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to load movies: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await tmdbFetch("/movie/popular?language=en-US&page=1");
+        if (cancelled) return;
         setMovies(data.results || []);
+        setPage(1);
+        setHasMore((data.page || 1) < (data.total_pages || 1));
       } catch (err) {
         console.error("Movies API error:", err);
-        setError("Movies could not be loaded.");
+        if (!cancelled) {
+          setError("Movies could not be loaded.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     getMovies();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const data = await tmdbFetch(
+        `/movie/popular?language=en-US&page=${nextPage}`
+      );
+      const incoming = data.results || [];
+      setMovies((current) => {
+        const seen = new Set(current.map((movie) => movie.id));
+        return [...current, ...incoming.filter((movie) => !seen.has(movie.id))];
+      });
+      setPage(nextPage);
+      setHasMore(nextPage < (data.total_pages || nextPage));
+    } catch (err) {
+      console.error("Load more movies error:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -77,66 +94,21 @@ export default function Movies() {
             </h2>
           </div>
 
-          <button
-            className="view-all-btn"
-            onClick={() => {
-              document
-                .getElementById("movies")
-                ?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            View All <FaArrowRight />
-          </button>
+          {hasMore && (
+            <button
+              type="button"
+              className="view-all-btn"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? "Loading..." : "View All"} <FaArrowRight />
+            </button>
+          )}
         </div>
 
         <div className="movies-grid">
-          {movies.slice(0, 20).map((movie) => (
-            <div className="movie-card" key={movie.id}>
-              <div className="movie-image">
-                {movie.poster_path ? (
-                  <img
-                    src={`${IMAGE_URL}${movie.poster_path}`}
-                    alt={movie.title}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="no-image">No Image</div>
-                )}
-
-                
-<div className="movie-rating">
-  <FaStar />
-  <span>{Number(movie.vote_average || 0).toFixed(1)}</span>
-</div>
-
-<div className="movie-overlay">
-  <button
-    type="button"
-    onClick={() => {
-      window.location.href = `/movie/${movie.id}`;
-    }}
-  >
-    <FaPlay />
-    View Details
-  </button>
-</div>
-
-
-                <button
-  onClick={() => {
-    window.location.href = `/movie/${movie.id}`;
-  }}
->
-  <FaPlay />
-  View Details
-</button>
-              </div>
-
-              <div className="movie-info">
-                <h3 title={movie.title}>{movie.title}</h3>
-                <p>{movie.release_date || "Unknown"}</p>
-              </div>
-            </div>
+          {movies.map((movie, index) => (
+            <MovieCard key={movie.id} movie={movie} index={index} />
           ))}
         </div>
       </div>

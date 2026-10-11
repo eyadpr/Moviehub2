@@ -1,20 +1,26 @@
-<<<<<<< HEAD
-# React + Vite
+# MovieHub
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A React + Vite movie browsing site powered by TMDB.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` to `.env`
+2. Add your TMDB read access token as `VITE_TMDB_TOKEN`
+3. Install and run:
 
-## React Compiler
+```bash
+npm install
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The app is configured for GitHub Pages at `/Moviehub2/`, so the local URL is:
 
-## Expanding the Oxlint configuration
+`http://localhost:5173/Moviehub2/`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
-=======
-# Moviehub2
->>>>>>> 2a57da53bdf3591d26aaee097216057384e8e772
+## Build and deploy
+
+```bash
+npm run build
+npm run preview
+npm run deploy
+```
